@@ -14,7 +14,8 @@ DIR_SRCS		=	./srcs/
 DIR_OBJS		=	./compiled_srcs/
 
 # FILES #
-SRCS			=	ft_malcolm.c
+SRCS			=	ft_malcolm.c \
+					utils.c
 
 INCLUDES		=	ft_malcolm.h
 
