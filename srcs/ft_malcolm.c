@@ -26,13 +26,19 @@ int			get_interface(t_malcolm *malcolm)
 	tmp = addrs;
 	while (tmp)
 	{
-		if (tmp->ifa_addr && tmp->ifa_addr->sa_family == AF_PACKET &&
-!(tmp->ifa_flags & IFF_LOOPBACK)) { // avoid 127.0.0.1
-			printf("Found available interface: %s\n", tmp->ifa_name);
-			ft_memcpy(&malcolm->ifa, tmp, sizeof(struct ifaddrs));
-			malcolm->ifindex = i;
-			ret = 0;
-			break ;
+		if (tmp->ifa_addr && tmp->ifa_addr->sa_family == AF_INET &&
+!(tmp->ifa_flags & IFF_LOOPBACK)) // avoid 127.0.0.1
+		{
+			uint32_t netip = ((struct sockaddr_in *)tmp->ifa_addr)->sin_addr.s_addr;
+			uint32_t netmask = ((struct sockaddr_in *)tmp->ifa_netmask)->sin_addr.s_addr;
+			if ((netip & netmask) == (malcolm->source.inet_ip & netmask) && (netip & netmask) == (malcolm->target.inet_ip & netmask))
+			{
+				printf("Found available interface: %s\n", tmp->ifa_name);
+				ft_memcpy(&malcolm->ifa, tmp, sizeof(struct ifaddrs));
+				malcolm->ifindex = i;
+				ret = 0;
+				break ;
+			}
 		}
 		tmp = tmp->ifa_next;
 		i++;
