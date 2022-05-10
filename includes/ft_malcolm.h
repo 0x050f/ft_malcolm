@@ -9,6 +9,7 @@
 # include <net/if_arp.h>
 # include <net/if.h>
 # include <stdio.h>
+# include <stdlib.h>
 # include <sys/socket.h>
 # include <unistd.h>
 
@@ -16,7 +17,10 @@
 # define MAC_LENGTH 6
 # define IPV4_LENGTH 4
 
-# define ETH2_HEADER_LEN 14
+# define PADDING 18
+
+# define print_arp_mac(x) printf("%02x:%02x:%02x:%02x:%02x:%02x\n", x[0], x[1], x[2], x[3], x[4], x[5])
+# define print_arp_ip(x) printf("%d.%d.%d.%d\n", x[0], x[1], x[2], x[3])
 
 typedef struct			s_arp_packet
 {
@@ -32,6 +36,8 @@ typedef struct			s_machine
 	char				*ip;
 	char				*mac;
 	in_addr_t			inet_ip;
+	unsigned char		arp_mac[MAC_LENGTH];
+	unsigned char		arp_ip[IPV4_LENGTH];
 }						t_machine;
 
 typedef struct			s_malcolm
@@ -45,7 +51,11 @@ typedef struct			s_malcolm
 }						t_malcolm;
 
 /* utils.c */
-size_t	ft_strlen(const char *s);
-void	*ft_memcpy(void *dst, const void *src, size_t n);
+size_t		ft_strlen(const char *s);
+void		*ft_memset(void *b, int c, size_t len);
+int			ft_memcmp(const void *s1, const void *s2, size_t n);
+void		*ft_memcpy(void *dst, const void *src, size_t n);
+int			hex2int(const char *hex);
+int			ft_atoi(const char *str);
 
 #endif
