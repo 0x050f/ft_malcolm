@@ -1,6 +1,7 @@
 # ft_malcolm
 
-Introduction to network security with Man In The Middle attack by spoofing ARP protocol.
+Introduction to network security with Man In The Middle attack by doing ARP spoofing.
+`ft_malcolm` will wait for a ARP broadcast to be sent over the network and will then send an ARP reply to `<target>` from `<source>`.
 
 ## Compilation
 
