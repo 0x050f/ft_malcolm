@@ -174,7 +174,7 @@ int			main(int argc, char *argv[])
 
 	if (argc != 5)
 	{
-		printf("Usage: %s source_ip source_mac address_target_ip target_mac_address\n", PRG_NAME);
+		printf("Usage: %s <source_ip> <source_mac> <address_target_ip> <target_mac_address>\n", PRG_NAME);
 		return (EXIT_FAILURE);
 	}
 	if (init_malcolm(&malcolm, argv))
