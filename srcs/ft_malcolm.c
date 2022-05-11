@@ -1,5 +1,25 @@
 #include "ft_malcolm.h"
 
+void		print_ethernet_header(struct ethhdr *ethhdr)
+{
+	printf("Ethernet header:\n");
+	printf("	destination: ");
+	print_arp_mac(ethhdr->h_dest);
+	printf("	source: ");
+	print_arp_mac(ethhdr->h_source);
+	printf("	type: 0x%04x\n", ntohs(ethhdr->h_proto));
+}
+
+void		print_arp_header(struct arphdr *arp_hdr)
+{
+	printf("Address Resolution Protocol:\n");
+	printf("	hardware type: %d\n", ntohs(arp_hdr->ar_hrd));
+	printf("	protocol type: 0x%04x\n", ntohs(arp_hdr->ar_pro));
+	printf("	hardware size: %d\n", arp_hdr->ar_hln);
+	printf("	protocol size: %d\n", arp_hdr->ar_pln);
+	printf("	op code: %d\n", ntohs(arp_hdr->ar_op));
+}
+
 int			check_mac_addr(char *mac_addr)
 {
 	if (ft_strlen(mac_addr) != 17)
@@ -88,21 +108,8 @@ t_arp_packet	*listen_arp_broadcast(t_malcolm *malcolm)
 	printf("An ARP request has been broadcast.\n");
 	if (malcolm->options.v)
 	{
-		struct ethhdr		*ethhdr;
-
-		ethhdr = (void *)buffer;
-		printf("Ethernet header:\n");
-		printf("	destination: ");
-		print_arp_mac(ethhdr->h_dest);
-		printf("	source: ");
-		print_arp_mac(ethhdr->h_source);
-		printf("	type: 0x%04x\n", ntohs(ethhdr->h_proto));
-		printf("Address Resolution Protocol:\n");
-		printf("	hardware type: %d\n", ntohs(packet->arp_hdr.ar_hrd));
-		printf("	protocol type: 0x%04x\n", ntohs(packet->arp_hdr.ar_pro));
-		printf("	hardware size: %d\n", packet->arp_hdr.ar_hln);
-		printf("	protocol size: %d\n", packet->arp_hdr.ar_pln);
-		printf("	op code: %d\n", ntohs(packet->arp_hdr.ar_op));
+		print_ethernet_header((void *)buffer);
+		print_arp_header(&packet->arp_hdr);
 	}
 	printf("	mac address of request: ");
 	print_arp_mac(packet->sender_mac);
@@ -160,6 +167,19 @@ void		send_arp_reply(t_malcolm *malcolm, t_arp_packet *received)
 	ft_memcpy(packet->target_mac, malcolm->target.arp_mac, sizeof(malcolm->target.arp_mac));
 	ft_memcpy(packet->target_ip, malcolm->target.arp_ip, sizeof(malcolm->target.arp_ip));
 	printf("Now sending an ARP reply to the target address with spoofed source, please wait...\n");
+	if (malcolm->options.v)
+	{
+		print_ethernet_header(ethhdr);
+		print_arp_header(&packet->arp_hdr);
+		printf("	mac address of request: ");
+		print_arp_mac(packet->sender_mac);
+		printf("	IP address of request: ");
+		print_arp_ip(packet->sender_ip);
+		printf("	mac address of target: ");
+		print_arp_mac(packet->target_mac);
+		printf("	IP address of request: ");
+		print_arp_ip(packet->target_ip);
+	}
 	if (sendto(malcolm->sockfd, &buffer, sizeof(buffer), 0, (struct sockaddr*)&malcolm->sockaddr, sizeof(malcolm->sockaddr)) <= 0)
 	{
 		dprintf(STDERR_FILENO, "%s: sendto: failed\n", PRG_NAME);
