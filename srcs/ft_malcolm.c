@@ -46,9 +46,9 @@ int			get_interface(t_malcolm *malcolm)
 			else if (malcolm->options.v)
 			{
 				if ((netip & netmask) != (malcolm->source.inet_ip & netmask))
-					printf("	%s not in '%s' ip range\n", malcolm->source.ip, tmp->ifa_name);
+					printf("	%s not in interface ip range\n", malcolm->source.ip);
 				if ((netip & netmask) != (malcolm->target.inet_ip & netmask))
-					printf("	%s not in '%s' ip range\n", malcolm->target.ip, tmp->ifa_name);
+					printf("	%s not in interface ip range\n", malcolm->target.ip);
 			}
 		}
 		tmp = tmp->ifa_next;
@@ -77,10 +77,35 @@ t_arp_packet	*listen_arp_broadcast(t_malcolm *malcolm)
 	}
 	ft_memcpy(packet, buffer + sizeof(struct ethhdr), sizeof(t_arp_packet));
 	printf("An ARP request has been broadcast.\n");
+	if (malcolm->options.v)
+	{
+		struct ethhdr		*ethhdr;
+
+		ethhdr = (void *)buffer;
+		printf("Ethernet header:\n");
+		printf("	destination: ");
+		print_arp_mac(ethhdr->h_dest);
+		printf("	source: ");
+		print_arp_mac(ethhdr->h_source);
+		printf("	type: 0x%04x\n", ntohs(ethhdr->h_proto));
+		printf("Address Resolution Protocol:\n");
+		printf("	hardware type: %d\n", ntohs(packet->arp_hdr.ar_hrd));
+		printf("	protocol type: 0x%04x\n", ntohs(packet->arp_hdr.ar_pro));
+		printf("	hardware size: %d\n", packet->arp_hdr.ar_hln);
+		printf("	protocol size: %d\n", packet->arp_hdr.ar_pln);
+		printf("	op code: %d\n", ntohs(packet->arp_hdr.ar_op));
+	}
 	printf("	mac address of request: ");
 	print_arp_mac(packet->sender_mac);
 	printf("	IP address of request: ");
 	print_arp_ip(packet->sender_ip);
+	if (malcolm->options.v)
+	{
+		printf("	mac address of target: ");
+		print_arp_mac(packet->target_mac);
+		printf("	IP address of request: ");
+		print_arp_ip(packet->target_ip);
+	}
 	return (packet);
 }
 
@@ -168,7 +193,7 @@ int			init_malcolm(t_malcolm *malcolm, int argc, char *argv[])
 		printf("	mac: ");
 		print_arp_mac(malcolm->target.arp_mac);
 	}
-	malcolm->sockfd = socket(AF_PACKET, SOCK_RAW, htons(ETH_P_ALL));
+	malcolm->sockfd = socket(AF_PACKET, SOCK_RAW, htons(ETH_P_ARP));
 	if (malcolm->sockfd < 0)
 	{
 		dprintf(STDERR_FILENO, "%s: socket: Operation not permitted\n", PRG_NAME);
