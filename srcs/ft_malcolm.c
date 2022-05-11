@@ -26,9 +26,13 @@ int			get_interface(t_malcolm *malcolm)
 	tmp = addrs;
 	while (tmp)
 	{
-		if (tmp->ifa_addr && tmp->ifa_addr->sa_family == AF_INET &&
-!(tmp->ifa_flags & IFF_LOOPBACK)) // avoid 127.0.0.1
+
+		if (tmp->ifa_addr && tmp->ifa_addr->sa_family == AF_INET)
 		{
+			if (malcolm->options.v)
+			{
+				printf("checking for interface %s...\n", tmp->ifa_name);
+			}
 			uint32_t netip = ((struct sockaddr_in *)tmp->ifa_addr)->sin_addr.s_addr;
 			uint32_t netmask = ((struct sockaddr_in *)tmp->ifa_netmask)->sin_addr.s_addr;
 			if ((netip & netmask) == (malcolm->source.inet_ip & netmask) && (netip & netmask) == (malcolm->target.inet_ip & netmask))
@@ -38,6 +42,13 @@ int			get_interface(t_malcolm *malcolm)
 				malcolm->ifindex = i;
 				ret = 0;
 				break ;
+			}
+			else if (malcolm->options.v)
+			{
+				if ((netip & netmask) != (malcolm->source.inet_ip & netmask))
+					printf("	%s not in '%s' ip range\n", malcolm->source.ip, tmp->ifa_name);
+				if ((netip & netmask) != (malcolm->target.inet_ip & netmask))
+					printf("	%s not in '%s' ip range\n", malcolm->target.ip, tmp->ifa_name);
 			}
 		}
 		tmp = tmp->ifa_next;
@@ -114,12 +125,6 @@ void		send_arp_reply(t_malcolm *malcolm, t_arp_packet *received)
 	ft_memcpy(packet->sender_ip, malcolm->source.arp_ip, sizeof(malcolm->source.arp_ip));
 	ft_memcpy(packet->target_mac, malcolm->target.arp_mac, sizeof(malcolm->target.arp_mac));
 	ft_memcpy(packet->target_ip, malcolm->target.arp_ip, sizeof(malcolm->target.arp_ip));
-/*
-	print_arp_ip(packet->sender_ip);
-	print_arp_mac(packet->sender_mac);
-	print_arp_ip(packet->target_ip);
-	print_arp_mac(packet->target_mac);
-*/
 	printf("Now sending an ARP reply to the target address with spoofed source, please wait...\n");
 	if (sendto(malcolm->sockfd, &buffer, sizeof(buffer), 0, (struct sockaddr*)&malcolm->sockaddr, sizeof(malcolm->sockaddr)) <= 0)
 	{
@@ -129,15 +134,15 @@ void		send_arp_reply(t_malcolm *malcolm, t_arp_packet *received)
 	printf("Sent an ARP reply packet, you may now check the arp table on the target.\n");
 }
 
-int			init_malcolm(t_malcolm *malcolm, char *argv[])
+int			init_malcolm(t_malcolm *malcolm, int argc, char *argv[])
 {
 	int				i;
 	t_machine		*machines[2] = {&(malcolm->source), &(malcolm->target)};
 
-	for (i = 1; i <= 4; i++)
+	for (i = argc - 4; i <= argc - 1; i++)
 	{
-		int index = (i - 1) / 2;
-		if (i % 2)
+		int index = (i - (argc - 4)) / 2;
+		if (argc % 2 == i % 2)
 		{
 			machines[index]->ip = argv[i];
 			if ((machines[index]->inet_ip  = inet_addr(argv[i])) == INADDR_NONE)
@@ -146,11 +151,22 @@ int			init_malcolm(t_malcolm *malcolm, char *argv[])
 		}
 		else
 		{
-			machines[(i - 1) / 2]->mac = argv[i];
+			machines[index]->mac = argv[i];
 			if (check_mac_addr(argv[i]))
 				goto error;
 			fill_arp_mac(machines[index]->arp_mac, machines[index]->mac);
 		}
+	}
+	if (malcolm->options.v)
+	{
+		printf("source:\n	ip: ");
+		print_arp_ip(malcolm->source.arp_ip);
+		printf("	mac: ");
+		print_arp_mac(malcolm->source.arp_mac);
+		printf("target:\n	ip: ");
+		print_arp_ip(malcolm->target.arp_ip);
+		printf("	mac: ");
+		print_arp_mac(malcolm->target.arp_mac);
 	}
 	malcolm->sockfd = socket(AF_PACKET, SOCK_RAW, htons(ETH_P_ALL));
 	if (malcolm->sockfd < 0)
@@ -178,12 +194,11 @@ int			main(int argc, char *argv[])
 	t_malcolm		malcolm;
 	t_arp_packet	*received;
 
-	if (argc != 5)
-	{
-		printf("Usage: %s <source_ip> <source_mac> <address_target_ip> <target_mac_address>\n", PRG_NAME);
+	if (check_args(argc, argv, &malcolm))
 		return (EXIT_FAILURE);
-	}
-	if (init_malcolm(&malcolm, argv))
+	if (malcolm.options.h)
+		return (EXIT_SUCCESS);
+	if (init_malcolm(&malcolm, argc, argv))
 		return (EXIT_FAILURE);
 	if (!(received = listen_arp_broadcast(&malcolm)))
 		return (EXIT_FAILURE);

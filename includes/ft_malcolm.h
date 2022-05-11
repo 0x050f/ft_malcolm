@@ -19,6 +19,14 @@
 
 # define PADDING 18
 
+# define NB_OPTIONS 2
+
+# define ERR_NB_DEST		1
+# define ERR_INV_OPT		2
+# define ERR_INV_ARG		3
+# define ERR_OOR_ARG		4 /* OUT OF RANGE */
+# define ERR_REQ_ARG		5
+
 # define print_arp_mac(x) printf("%02x:%02x:%02x:%02x:%02x:%02x\n", x[0], x[1], x[2], x[3], x[4], x[5])
 # define print_arp_ip(x) printf("%d.%d.%d.%d\n", x[0], x[1], x[2], x[3])
 
@@ -40,6 +48,12 @@ typedef struct			s_machine
 	unsigned char		arp_ip[IPV4_LENGTH];
 }						t_machine;
 
+typedef struct			s_options
+{
+	int					h;
+	int					v;
+}						t_options;
+
 typedef struct			s_malcolm
 {
 	t_machine			source;
@@ -48,7 +62,11 @@ typedef struct			s_malcolm
 	int					sockfd;
 	struct ifaddrs		ifa;
 	int					ifindex;
+	t_options			options;
 }						t_malcolm;
+
+/* args.c */
+int			check_args(int argc, char *argv[], t_malcolm *malcolm);
 
 /* utils.c */
 size_t		ft_strlen(const char *s);
