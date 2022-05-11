@@ -19,29 +19,39 @@ int			get_interface(t_malcolm *malcolm)
 {
 	struct ifaddrs	*addrs;
 	struct ifaddrs	*tmp;
-	int				i = 1;
 	int				ret = 1;
 
 	getifaddrs(&addrs);
 	tmp = addrs;
 	while (tmp)
 	{
-
 		if (tmp->ifa_addr && tmp->ifa_addr->sa_family == AF_INET)
 		{
 			if (malcolm->options.v)
-			{
 				printf("checking for interface %s...\n", tmp->ifa_name);
-			}
 			uint32_t netip = ((struct sockaddr_in *)tmp->ifa_addr)->sin_addr.s_addr;
 			uint32_t netmask = ((struct sockaddr_in *)tmp->ifa_netmask)->sin_addr.s_addr;
 			if ((netip & netmask) == (malcolm->source.inet_ip & netmask) && (netip & netmask) == (malcolm->target.inet_ip & netmask))
 			{
-				printf("Found available interface: %s\n", tmp->ifa_name);
-				ft_memcpy(&malcolm->ifa, tmp, sizeof(struct ifaddrs));
-				malcolm->ifindex = i;
-				ret = 0;
-				break ;
+				int				i = 1;
+				struct ifaddrs	*tmpp = addrs;
+				while (tmpp)
+				{
+					if (tmpp->ifa_addr && !ft_memcmp(tmpp->ifa_name, tmp->ifa_name, ft_strlen(tmpp->ifa_name)) && tmpp->ifa_addr->sa_family == AF_PACKET)
+					{
+						printf("Found available interface: %s\n", tmp->ifa_name);
+						ft_memcpy(&malcolm->ifa, tmp, sizeof(struct ifaddrs));
+						malcolm->ifindex = i;
+						ret = 0;
+						break ;
+					}
+					i++;
+					tmpp = tmpp->ifa_next;
+				}
+				if (tmpp)
+					break ;
+				else if (malcolm->options.v)
+					printf("	%s is not of type AF_PACKET\n", tmp->ifa_name);
 			}
 			else if (malcolm->options.v)
 			{
@@ -52,7 +62,6 @@ int			get_interface(t_malcolm *malcolm)
 			}
 		}
 		tmp = tmp->ifa_next;
-		i++;
 	}
 	freeifaddrs(addrs);
 	if (ret)
