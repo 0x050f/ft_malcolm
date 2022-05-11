@@ -40,7 +40,15 @@ int			get_interface(t_malcolm *malcolm)
 					if (tmpp->ifa_addr && !ft_memcmp(tmpp->ifa_name, tmp->ifa_name, ft_strlen(tmpp->ifa_name)) && tmpp->ifa_addr->sa_family == AF_PACKET)
 					{
 						printf("Found available interface: %s\n", tmp->ifa_name);
-						ft_memcpy(&malcolm->ifa, tmp, sizeof(struct ifaddrs));
+						ft_memcpy(malcolm->arp_ip, &((struct sockaddr_in *)tmp->ifa_addr)->sin_addr, IPV4_LENGTH);
+						ft_memcpy(malcolm->arp_mac, ((struct sockaddr_ll*)(tmpp->ifa_addr))->sll_addr, MAC_LENGTH);
+						if (malcolm->options.v)
+						{
+							printf("	ip: ");
+							print_arp_ip(malcolm->arp_ip);
+							printf("	mac: ");
+							print_arp_mac(malcolm->arp_mac);
+						}
 						malcolm->ifindex = i;
 						ret = 0;
 						break ;

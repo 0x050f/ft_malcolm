@@ -60,9 +60,10 @@ typedef struct			s_malcolm
 	t_machine			target;
 	struct sockaddr_ll	sockaddr;
 	int					sockfd;
-	struct ifaddrs		ifa;
 	int					ifindex;
 	t_options			options;
+	unsigned char		arp_mac[MAC_LENGTH];
+	unsigned char		arp_ip[IPV4_LENGTH];
 }						t_malcolm;
 
 /* network.c */
