@@ -1,21 +1,17 @@
 #include "ft_malcolm.h"
 
-t_arp_packet	*listen_arp_broadcast(t_malcolm *malcolm)
+int			listen_arp_broadcast(t_malcolm *malcolm)
 {
 	t_arp_packet		*packet;
 	unsigned char		buffer[sizeof(struct ethhdr) + sizeof(t_arp_packet)];
 
-	packet = malloc(sizeof(t_arp_packet));
 	ft_memset(buffer, 0, sizeof(struct ethhdr) + sizeof(t_arp_packet));
 	while (ft_memcmp(buffer, "\xff\xff\xff\xff\xff\xff", 6))
 	{
 		if(recvfrom(malcolm->sockfd, &buffer, sizeof(buffer), 0, NULL, NULL) <= 0)
-		{
-			free(packet);
-			return (NULL);
-		}
+			return (1);
 	}
-	ft_memcpy(packet, buffer + sizeof(struct ethhdr), sizeof(t_arp_packet));
+	packet = (void *)buffer + sizeof(struct ethhdr);
 	printf("An ARP request has been broadcast.\n");
 	if (malcolm->options.v)
 	{
@@ -33,10 +29,10 @@ t_arp_packet	*listen_arp_broadcast(t_malcolm *malcolm)
 		printf("	IP address of request: ");
 		print_arp_ip(packet->target_ip);
 	}
-	return (packet);
+	return (0);
 }
 
-void		send_arp_reply(t_malcolm *malcolm, t_arp_packet *received)
+void		send_arp_reply(t_malcolm *malcolm)
 {
 	unsigned char		buffer[sizeof(struct ethhdr) + sizeof(t_arp_packet) + PADDING];
 	struct ethhdr		*ethhdr;
@@ -48,8 +44,8 @@ void		send_arp_reply(t_malcolm *malcolm, t_arp_packet *received)
 	ft_memcpy(ethhdr->h_source, malcolm->source.arp_mac, sizeof(malcolm->source.arp_mac));
     ethhdr->h_proto = htons(ETH_P_ARP);
 	packet = (void *)buffer + sizeof(struct ethhdr);
-	packet->arp_hdr.ar_hrd = received->arp_hdr.ar_hrd;
-	packet->arp_hdr.ar_pro = received->arp_hdr.ar_pro;
+	packet->arp_hdr.ar_hrd = htons(1);
+	packet->arp_hdr.ar_pro = htons(ETH_P_IP);
 	packet->arp_hdr.ar_hln = MAC_LENGTH;
 	packet->arp_hdr.ar_pln = IPV4_LENGTH;
 	packet->arp_hdr.ar_op = htons(ARPOP_REPLY);
@@ -137,7 +133,6 @@ int			init_malcolm(t_malcolm *malcolm, int argc, char *argv[])
 int			main(int argc, char *argv[])
 {
 	t_malcolm		malcolm;
-	t_arp_packet	*received;
 
 	if (check_args(argc, argv, &malcolm))
 		return (EXIT_FAILURE);
@@ -145,10 +140,9 @@ int			main(int argc, char *argv[])
 		return (EXIT_SUCCESS);
 	if (init_malcolm(&malcolm, argc, argv))
 		return (EXIT_FAILURE);
-	if (!(received = listen_arp_broadcast(&malcolm)))
+	if (listen_arp_broadcast(&malcolm))
 		return (EXIT_FAILURE);
-	send_arp_reply(&malcolm, received);
-	free(received);
+	send_arp_reply(&malcolm);
 	printf("Exiting program...\n");
 	return (EXIT_SUCCESS);
 }
