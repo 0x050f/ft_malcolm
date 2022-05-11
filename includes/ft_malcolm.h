@@ -65,6 +65,18 @@ typedef struct			s_malcolm
 	t_options			options;
 }						t_malcolm;
 
+/* network.c */
+int			check_mac_addr(char *mac_addr);
+int			get_interface(t_malcolm *malcolm);
+void		fill_arp_ip(unsigned char dest[IPV4_LENGTH], char *ip);
+void		fill_arp_mac(unsigned char dest[IPV4_LENGTH], char *mac);
+
+/* logs.c */
+void		show_help(void);
+int			args_error(char *prg_name, int error, char *str, int range1, int range2);
+void		print_ethernet_header(struct ethhdr *ethhdr);
+void		print_arp_header(struct arphdr *arp_hdr);
+
 /* args.c */
 int			check_args(int argc, char *argv[], t_malcolm *malcolm);
 
